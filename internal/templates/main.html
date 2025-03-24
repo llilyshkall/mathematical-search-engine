@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Математический редактор</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        #editor {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        #latex-input {
+            width: 300px;
+            height: 100px;
+            padding: 10px;
+            font-family: monospace;
+        }
+
+        #preview {
+            flex-grow: 1;
+            padding: 20px;
+            border: 1px solid #ccc;
+            min-height: 100px;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #e0e0e0;
+        }
+
+        .special {
+            background-color: #d0e4ff;
+        }
+
+        .navigation {
+            grid-column: span 2;
+        }
+    </style>
+</head>
+<body>
+<div id="editor">
+    <textarea id="latex-input" placeholder="Введите LaTeX здесь..."></textarea>
+    <div id="preview"></div>
+</div>
+
+<div class="keyboard">
+    <!-- Цифры -->
+    <button onclick="insert('7')">7</button>
+    <button onclick="insert('8')">8</button>
+    <button onclick="insert('9')">9</button>
+    <button class="special" onclick="insert('\\sqrt{}')">√</button>
+    <button class="special" onclick="insert('^{}')">x²</button>
+    <button class="special" onclick="insert('_{}')">x₀</button>
+    <button class="special" onclick="insert('\\frac{}{}')">a/b</button>
+    <button class="special" onclick="insert('\\pi')">π</button>
+    <button class="special" onclick="insert('\\infty')">∞</button>
+    <button class="special" onclick="insert('\\sum_{}^{}')">Σ</button>
+
+    <button onclick="insert('4')">4</button>
+    <button onclick="insert('5')">5</button>
+    <button onclick="insert('6')">6</button>
+    <button onclick="insert('+')">+</button>
+    <button onclick="insert('-')">-</button>
+    <button onclick="insert('(')">(</button>
+    <button onclick="insert(')')">)</button>
+    <button onclick="insert('=')">=</button>
+    <button onclick="insert('\\times')">×</button>
+    <button onclick="insert('\\div')">÷</button>
+
+    <button onclick="insert('1')">1</button>
+    <button onclick="insert('2')">2</button>
+    <button onclick="insert('3')">3</button>
+    <button onclick="insert('\\alpha')">α</button>
+    <button onclick="insert('\\beta')">β</button>
+    <button onclick="insert('\\gamma')">γ</button>
+    <button onclick="insert('\\theta')">θ</button>
+    <button onclick="insert('\\lim_{}')">lim</button>
+    <button onclick="insert('\\int_{}^{}')">∫</button>
+    <button onclick="insert('\\pm')">±</button>
+
+    <button onclick="insert('0')">0</button>
+    <button onclick="insert('.')">.</button>
+    <button onclick="insert(',')">,</button>
+    <button onclick="moveCursor(-1)">←</button>
+    <button onclick="moveCursor(1)">→</button>
+    <button onclick="document.execCommand('undo')">⟲</button>
+    <button onclick="document.execCommand('redo')">⟳</button>
+    <button onclick="insert('\\ldots')">…</button>
+    <button onclick="insert('\\vec{}')">v⃗</button>
+    <button onclick="insert('\\binom{}{}')">C(n,k)</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script>
+    const input = document.getElementById('latex-input');
+    const preview = document.getElementById('preview');
+
+    function updatePreview() {
+        try {
+            katex.render(input.value, preview, {
+                throwOnError: false,
+                displayMode: true
+            });
+        } catch (e) {
+            preview.innerHTML = '<div style="color:red">Ошибка в формуле</div>';
+        }
+    }
+
+    input.addEventListener('input', updatePreview);
+    updatePreview();
+
+    function insert(text) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const value = input.value;
+
+        input.value = value.slice(0, start) + text + value.slice(end);
+        input.focus();
+        const newPos = start + text.length;
+        input.setSelectionRange(newPos, newPos);
+    }
+
+    function moveCursor(steps) {
+        const newPos = input.selectionStart + steps;
+        input.setSelectionRange(newPos, newPos);
+        input.focus();
+    }
+</script>
+</body>
+</html>

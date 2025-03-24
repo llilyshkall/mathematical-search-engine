@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LaTeX Formula Search</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        /* Стили остаются без изменений */
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 80%;
+            max-width: 800px;
+            margin-top: 20px;
+        }
+        #formula-preview {
+            text-align: center;
+            margin: 20px 0;
+            min-height: 80px;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        #latex-input {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        #results {
+            width: 100%;
+            max-height: 50vh;
+            overflow-y: auto;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .result-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+            cursor: pointer;
+        }
+        .result-item.active {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="formula-preview"></div>
+    <div class="input-container">
+        <input type="text"
+               id="latex-input"
+               placeholder="Введите LaTeX формулу"
+               autocomplete="off">
+    </div>
+    <div id="results"></div>
+</div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<script>
+    const inputField = document.getElementById('latex-input');
+    const resultsDiv = document.getElementById('results');
+    const formulaPreview = document.getElementById('formula-preview');
+
+    let activeIndex = -1;
+    let results = [];
+
+    // Функция рендеринга формулы
+    function renderFormula(latex, element) {
+        element.innerHTML = ''; // Очищаем контейнер
+        try {
+            katex.render(latex, element, {
+                throwOnError: false,
+                displayMode: true
+            });
+        } catch (e) {
+            element.innerHTML = `<div class="error">Ошибка в формуле: ${e.message}</div>`;
+        }
+    }
+
+    // Обновление превью
+    function updatePreview() {
+        if (activeIndex === -1) {
+            renderFormula(inputField.value, formulaPreview);
+        } else {
+            // Используем mask из выбранного элемента
+            renderFormula(results[activeIndex].mask, formulaPreview);
+        }
+    }
+
+    // Функция для управления курсором
+    function manageCursor() {
+        if (activeIndex !== -1) {
+            // Если есть активный элемент, убираем фокус с поля ввода
+            inputField.blur();
+        } else {
+            // Если нет активного элемента, ставим курсор в конец строки
+            inputField.focus();
+            inputField.setSelectionRange(inputField.value.length, inputField.value.length);
+        }
+    }
+
+    // Отправка запроса
+    function sendRequest() {
+        const input = inputField.value.trim();
+        if (!input) {
+            results = [];
+            showResults(results);
+            return;
+        }
+
+        fetch('/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ input: input })
+        })
+            .then(response => response.json())
+            .then(data => {
+                results = data;
+                showResults(data);
+            })
+            .catch(console.error);
+    }
+
+    // Отображение результатов
+    function showResults(items) {
+        resultsDiv.innerHTML = items.map((item, index) => `
+            <div class="result-item" data-index="${index}">
+                ${item.formula} <!-- Показываем формулу -->
+            </div>
+        `).join('');
+
+        document.querySelectorAll('.result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                setActiveItem(Number(item.dataset.index));
+            });
+        });
+
+        activeIndex = -1;
+        updatePreview();
+    }
+
+    // Установка активного элемента
+    function setActiveItem(index) {
+        const items = document.querySelectorAll('.result-item');
+        if (activeIndex >= 0) items[activeIndex].classList.remove('active');
+
+        activeIndex = index;
+        if (activeIndex >= 0) {
+            items[activeIndex].classList.add('active');
+        }
+        updatePreview();
+        manageCursor(); // Управляем курсором после изменения активного элемента
+    }
+
+    // Обработчик клавиш
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault(); // Предотвращаем прокрутку страницы
+            if (results.length > 0) {
+                // Переход к следующему элементу
+                setActiveItem((activeIndex + 2) % (results.length + 1) - 1);
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault(); // Предотвращаем прокрутку страницы
+            if (results.length > 0) {
+                // Переход к предыдущему элементу
+                setActiveItem((activeIndex + results.length + 1) % (results.length + 1) - 1);
+            } else {
+                // Если результатов нет, возвращаемся к исходному выражению
+                setActiveItem(-1);
+            }
+        }
+    });
+
+    // Обработчик ввода
+    inputField.addEventListener('input', () => {
+        activeIndex = -1;
+        sendRequest();
+        updatePreview();
+    });
+
+    // Обработчик фокуса на поле ввода
+    inputField.addEventListener('focus', () => {
+        if (activeIndex !== -1) {
+            setActiveItem(-1)
+            updatePreview(); // Обновляем превью
+            manageCursor(); // Управляем курсором
+        }
+    });
+
+    // Инициализация KaTeX
+    document.addEventListener('DOMContentLoaded', () => {
+        renderMathInElement(document.body);
+    });
+</script>
+</body>
+</html>
