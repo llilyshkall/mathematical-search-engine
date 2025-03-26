@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-
-	"github.com/llilyshkall/mathematical-search-engine/internal/math_expression"
 )
 
 // Добавляем структуру для хранения данных формулы
@@ -50,6 +48,24 @@ func (s *Service) SearchHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
+
+//func (s *Service) search(r Request) ([]FormulaResult, error) {
+//	expressions, err := s.db.GetAll()
+//	if err != nil {
+//		return nil, err
+//	}
+//	ret := make([]FormulaResult, 0)
+//	expr := math_expression_v2.ParseLaTeX(r.Input)
+//	for _, row := range expressions {
+//		e := math_expression_v2.ParseLaTeX(row.Latex)
+//		if e.Compare(expr) != math_expression_v2.Different {
+//			m, _ := e.MaskLaTeX(expr)
+//			ret = append(ret, FormulaResult{Formula: row.Latex, Mask: m})
+//		}
+//	}
+//	log.Println("response:", ret)
+//	return ret, nil
+//}
 
 func (s *Service) search(r Request) ([]FormulaResult, error) {
 	expressions, err := s.db.GetAll()
