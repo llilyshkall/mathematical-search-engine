@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"github.com/llilyshkall/mathematical-search-engine/internal/math_expression"
 	"log"
 	"net/http"
 )
